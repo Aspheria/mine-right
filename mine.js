@@ -1,9 +1,11 @@
 const readline = require('readline-sync');
+const prompt = require('prompt-sync')();
+
 
 // Constants to define the size of the game board
-const ROWS = 8;
-const COLS = 8;
-const MINES = 2;
+const ROWS = 4;
+const COLS = 4;
+const MINES = 3;
 
 // A 2D array to represent the game board
 const board = [];
@@ -71,89 +73,118 @@ function displayBoard() {
 }
 
 // Function to display the current game state (fog) in the console
-function displayFog() {
+function showFog() {
+  // Clear console before displaying new state
   console.clear();
-  console.log('  ' + [...Array(COLS).keys()].join(' '));
+
+  // Display column headers
+  const columnHeaders = [...Array(COLS).keys()].join(' ');
+  console.log(`  ${columnHeaders}`);
+
+  // Display each row with its corresponding fog values
   for (let row = 0; row < ROWS; row++) {
-    console.log(row + ' ' + fog[row].join(' '));
+    const fogValues = fog[row].join(' ');
+    console.log(`${row} ${fogValues}`);
   }
 }
 
-// Checks if only mines are left unrevealed for win condition
-function checkWinCondition() {
-  const unrevealed = fog
-    .flatMap((value) => [...value])
-    .map((tile, index) => {
-      const row = index % ROWS;
-      const col = Math.floor(index / ROWS);
-      return {
+function checkWinner() {
+  const unrevealed = [];
+
+  for (let row = 0; row < ROWS; row++) {
+    for (let col = 0; col < COLS; col++) {
+      const tile = {
         row,
         col,
-        tile,
+        tile: fog[row][col],
         fogValue: fog[row][col],
         boardValue: board[row][col]
       };
-    })
-    .filter((tile) => tile.fogValue === '#');
+      
+      if (fog[row][col] === '#') {
+        unrevealed.push(tile);
+      }
+    }
+  }
 
-  const hasWon = unrevealed.every(
-    (tile) => tile.boardValue === '*'
-  );
+  const hasWon = unrevealed.every(tile => tile.boardValue === '*');
 
   if (hasWon) {
-    displayFog();
+    showFog();
     console.log('You win!!');
     process.exit(0);
   }
 }
 
-// Reveals all adjacent cells by using depth first search recursively
+// Reveals all adjacent cells by using depth-first search recursively
 function revealAdjacent(row, col) {
+  // Check if current cell is within the board boundaries
   if (row < 0 || col < 0 || row === ROWS || col === COLS) {
     return;
   }
 
+  // Check if current cell has already been revealed or if it's a mine
   if (fog[row][col] !== '#' || board[row][col] === '*') {
     return;
   }
 
+  // Reveal the current cell
   fog[row][col] = board[row][col];
+
+  // If the current cell is a blank cell, reveal all adjacent cells
   if (board[row][col] === 0) {
-    revealAdjacent(row - 1, col);
-    revealAdjacent(row + 1, col);
-    revealAdjacent(row, col - 1);
-    revealAdjacent(row, col + 1);
+    revealAdjacent(row - 1, col); // reveal top cell
+    revealAdjacent(row + 1, col); // reveal bottom cell
+    revealAdjacent(row, col - 1); // reveal left cell
+    revealAdjacent(row, col + 1); // reveal right cell
   }
 }
 
-// Function to be done
+// Reveals the cell at the specified row and column coordinates
 function revealCell(row, col) {
+  const cellValue = board[row][col];
+
+  // If the cell has already been revealed, do nothing
   if (fog[row][col] !== '#') {
-    console.log('Already revealed');
+    console.log('Cell already revealed');
     return;
   }
 
-  if (board[row][col] === '*') {
-    fog[row][col] = board[row][col];
-    displayFog();
-    console.log('You lost');
+  // If the cell contains a mine, reveal it and end the game
+  if (cellValue === '*') {
+    fog[row][col] = cellValue;
+    showFog();
+    console.log('You lost!');
     process.exit(0);
   }
 
+  // Otherwise, reveal the cell and its adjacent cells
   revealAdjacent(row, col);
-  checkWinCondition();
-  displayFog();
+
+  // Check if the game has been won
+  if (checkWinner()) {
+    showFog();
+    console.log('You win!');
+    process.exit(0);
+  }
+
+  // Display the updated game board
+  showFog();
 }
 
 // Call the displayBoard function to display the initial state of the board
 // displayBoard();
-displayFog();
+showFog();  
 
 while (true) {
-  const position = readline.question('Enter position: (row col) ');
-  const [row, col] = position.split(' ').map(n => parseInt(n, 10));
+  const input = prompt('Enter with position: (row col) ');
+  const [inputRow, inputCol] = input.split(' ').map(Number);
 
-  if (row !== NaN && col !== NaN && row >= 0 && col >= 0 && row < ROWS && col < COLS) {
-    revealCell(row, col);
+  const isValidInput = !Number.isNaN(inputRow) && !Number.isNaN(inputCol) && inputRow >= 0 && inputCol >= 0 && inputRow < ROWS && inputCol < COLS;
+  if (!isValidInput) {
+    console.log('Please enter a valid input.');
+    continue;
   }
+
+  revealCell(inputRow, inputCol);
 }

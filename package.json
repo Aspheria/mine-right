@@ -1,0 +1,13 @@
+{
+    "name": "minesweeper-right-balance",
+    "version": "1.0.0",
+    "description": "",
+    "main": "mine.js",
+    "scripts": {
+        "start": "node ./mine.js"
+    },
+    "author": "Lorrane Parrilla",
+    "dependencies": {
+        "prompt-sync": "^4.2.0",
+    }
+}
